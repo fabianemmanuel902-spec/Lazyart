@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="application-name" content="Camera Overlay">
+  <meta name="apple-mobile-web-app-title" content="Camera Overlay">
+
+  <!-- App Icon (SVG) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232563eb'/%3E%3Ccircle cx='50' cy='48' r='22' fill='none' stroke='white' stroke-width='6'/%3E%3Ccircle cx='50' cy='48' r='10' fill='white'/%3E%3Crect x='30' y='22' width='18' height='10' rx='3' fill='white'/%3E%3Crect x='62' y='68' width='20' height='14' rx='3' fill='%2393c5fd' opacity='0.9'/%3E%3C/svg%3E">
+
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232563eb'/%3E%3Ccircle cx='50' cy='48' r='22' fill='none' stroke='white' stroke-width='6'/%3E%3Ccircle cx='50' cy='48' r='10' fill='white'/%3E%3Crect x='30' y='22' width='18' height='10' rx='3' fill='white'/%3E%3Crect x='62' y='68' width='20' height='14' rx='3' fill='%2393c5fd' opacity='0.9'/%3E%3C/svg%3E">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Camera%20Overlay%22%2C%22short_name%22%3A%22Overlay%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0a%22%2C%22theme_color%22%3A%22%230a0a0a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%253E%253Crect%20width%3D'100'%20height%3D'100'%20rx%3D'22'%20fill%3D'%25232563eb'%2F%253E%253Ccircle%20cx%3D'50'%20cy%3D'48'%20r%3D'22'%20fill%3D'none'%20stroke%3D'white'%20stroke-width%3D'6'%2F%253E%253Ccircle%20cx%3D'50'%20cy%3D'48'%20r%3D'10'%20fill%3D'white'%2F%253E%253Crect%20x%3D'30'%20y%3D'22'%20width%3D'18'%20height%3D'10'%20rx%3D'3'%20fill%3D'white'%2F%253E%253Crect%20x%3D'62'%20y%3D'68'%20width%3D'20'%20height%3D'14'%20rx%3D'3'%20fill%3D'%252393c5fd'%20opacity%3D'0.9'%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
+  <title>Camera Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: #0a0a0a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      background: rgba(20, 20, 20, 0.95);
+      border-bottom: 1px solid #333;
+      z-index: 20;
+      gap: 8px;
+    }
+
+    .top-bar h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    /* Buttons - large for touch */
+    button, label.btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active, label.btn:active {
+      transform: scale(0.96);
+    }
+
+    button:disabled {
+      background: #333 !important;
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #333;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Camera viewer */
+    .viewer {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    #camera {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #111;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 85%;
+      max-height: 70%;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0.7;
+      touch-action: none;
+    }
+
+    #overlay.draggable {
+      pointer-events: auto;
+      cursor: move;
+    }
+
+    /* Bottom control panel */
+    .panel {
+      background: rgba(20, 20, 20, 0.98);
+      border-top: 1px solid #333;
+      padding: 14px 16px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 20;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slider-header label {
+      font-size: 0.95rem;
+      color: #ddd;
+      font-weight: 500;
+    }
+
+    .slider-header .value {
+      font-size: 0.95rem;
+      color: #60a5fa;
+      font-weight: 600;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 32px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      margin: 0;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #fff;
+      margin-top: -10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #aaa;
+      text-align: center;
+      min-height: 1.3em;
+      line-height: 1.4;
+    }
+
+    .status.error {
+      color: #f87171;
+    }
+
+    .status.success {
+      color: #4ade80;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Floating action buttons when camera is on (optional compact mode) */
+    .fab-row {
+      display: none;
+    }
+
+    /* Make sure video doesn't cause scroll */
+    video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>📷 Overlay</h1>
+    <div class="top-actions">
+      <button id="startBtn">Start Camera</button>
+      <button id="stopBtn" class="secondary" disabled>Stop</button>
+      <label class="btn" for="fileInput">Upload</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <button id="clearBtn" class="secondary" disabled>Clear</button>
+    </div>
+  </div>
+
+  <div class="viewer">
+    <video id="camera" autoplay playsinline muted></video>
+    <img id="overlay" alt="Overlay" style="display: none;">
+  </div>
+
+  <div class="panel">
+    <div class="slider-group">
+      <div class="slider-header">
+        <label for="opacity">Transparency</label>
+        <span class="value" id="opacityValue">70%</span>
+      </div>
+      <input type="range" id="opacity" min="0" max="100" value="70">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label for="scale">Size</label>
+        <span class="value" id="scaleValue">100%</span>
+      </div>
+      <input type="range" id="scale" min="10" max="250" value="100">
+    </div>
+
+    <p class="status" id="status">Tap “Start Camera” to begin</p>
+    <p class="hint">Drag the image to move it • Use the sliders to adjust</p>
+  </div>
+
+  <script>
+    const video = document.getElementById('camera');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const fileInput = document.getElementById('fileInput');
+    const opacitySlider = document.getElementById('opacity');
+    const opacityValue = document.getElementById('opacityValue');
+    const scaleSlider = document.getElementById('scale');
+    const scaleValue = document.getElementById('scaleValue');
+    const status = document.getElementById('status');
+
+    let stream = null;
+    let isDragging = false;
+    let startX, startY, offsetX = 0, offsetY = 0;
+    let currentScale = 1;
+
+    function setStatus(msg, type = '') {
+      status.textContent = msg;
+      status.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function checkSecureContext() {
+      if (!window.isSecureContext) {
+        setStatus('⚠️ Needs HTTPS. Upload this file to Netlify Drop or Tiiny.host', 'error');
+        startBtn.disabled = true;
+        return false;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('Camera not supported in this browser', 'error');
+        startBtn.disabled = true;
+        return false;
+      }
+      return true;
+    }
+
+    checkSecureContext();
+
+    // Start camera
+    startBtn.addEventListener('click', async () => {
+      if (!checkSecureContext()) return;
+
+      setStatus('Requesting camera...');
+      startBtn.disabled = true;
+
+      const attempts = [
+        { video: { facingMode: { ideal: 'environment' } }, audio: false },
+        { video: { facingMode: 'environment' }, audio: false },
+        { video: true, audio: false },
+        { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }
+      ];
+
+      let lastError = null;
+
+      for (const constraints of attempts) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+
+          await new Promise((resolve) => {
+            if (video.readyState >= 1) {
+              video.play().then(resolve).catch(resolve);
+            } else {
+              video.onloadedmetadata = () => {
+                video.play().then(resolve).catch(resolve);
+              };
+            }
+          });
+
+          stopBtn.disabled = false;
+          setStatus('Camera active ✓', 'success');
+          return;
+        } catch (err) {
+          lastError = err;
+          console.warn('Camera try failed:', err.name);
+        }
+      }
+
+      // Failed
+      startBtn.disabled = false;
+      let msg = 'Could not open camera. ';
+
+      if (lastError) {
+        const name = lastError.name || '';
+        if (name.includes('NotAllowed') || name.includes('Permission')) {
+          msg = 'Permission denied. Allow camera access in browser settings.';
+        } else if (name.includes('NotFound') || name.includes('DevicesNotFound')) {
+          msg = 'No camera found on this device.';
+        } else if (name.includes('NotReadable') || name.includes('TrackStart')) {
+          msg = 'Camera is being used by another app. Close it and try again.';
+        } else {
+          msg += (lastError.message || name);
+        }
+      }
+
+      setStatus(msg, 'error');
+    });
+
+    // Stop camera
+    stopBtn.addEventListener('click', () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+        video.srcObject = null;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      setStatus('Camera stopped');
+    });
+
+    // Upload image
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        overlay.src = ev.target.result;
+        overlay.style.display = 'block';
+        overlay.classList.add('draggable');
+        clearBtn.disabled = false;
+        offsetX = 0;
+        offsetY = 0;
+        currentScale = scaleSlider.value / 100;
+        overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+        setStatus('Image loaded – adjust below', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', () => {
+      overlay.src = '';
+      overlay.style.display = 'none';
+      overlay.classList.remove('draggable');
+      clearBtn.disabled = true;
+      fileInput.value = '';
+      setStatus('Overlay cleared');
+    });
+
+    // Opacity
+    opacitySlider.addEventListener('input', () => {
+      const val = opacitySlider.value;
+      overlay.style.opacity = val / 100;
+      opacityValue.textContent = val + '%';
+    });
+
+    // Scale
+    scaleSlider.addEventListener('input', () => {
+      currentScale = scaleSlider.value / 100;
+      scaleValue.textContent = scaleSlider.value + '%';
+      overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+    });
+
+    // Drag (touch + mouse)
+    function getPoint(e) {
+      if (e.touches && e.touches.length) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function startDrag(e) {
+      if (!overlay.classList.contains('draggable')) return;
+      isDragging = true;
+      const p = getPoint(e);
+      startX = p.x - offsetX;
+      startY = p.y - offsetY;
+      e.preventDefault();
+    }
+
+    function onDrag(e) {
+      if (!isDragging) return;
+      const p = getPoint(e);
+      offsetX = p.x - startX;
+      offsetY = p.y - startY;
+      overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+      e.preventDefault();
+    }
+
+    function endDrag() {
+      isDragging = false;
+    }
+
+    overlay.addEventListener('mousedown', startDrag);
+    overlay.addEventListener('touchstart', startDrag, { passive: false });
+    window.addEventListener('mousemove', onDrag);
+    window.addEventListener('touchmove', onDrag, { passive: false });
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('touchend', endDrag);
+
+    // Initial
+    overlay.style.opacity = 0.7;
+  </script>
+</body>
+</html>
