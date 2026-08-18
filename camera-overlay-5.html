@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="application-name" content="LAZY ART">
+  <meta name="apple-mobile-web-app-title" content="LAZY ART">
+
+  <!-- App Icon (upload art.png next to this file) -->
+  <link rel="icon" type="image/png" href="art.png">
+  <link rel="apple-touch-icon" href="art.png">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <title>LAZY ART 🎭</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: #0a0a0a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      background: rgba(20, 20, 20, 0.95);
+      border-bottom: 1px solid #333;
+      z-index: 20;
+      gap: 8px;
+    }
+
+    .top-bar h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button.torch-on {
+      background: #f59e0b !important;
+      color: #000 !important;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .control-box {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-box .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-box label {
+      font-size: 0.9rem;
+      color: #ddd;
+      font-weight: 500;
+    }
+
+    .control-box input[type="number"] {
+      width: 64px;
+      background: #111;
+      border: 1px solid #444;
+      color: #60a5fa;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 6px 8px;
+      border-radius: 8px;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    .control-box input[type="number"]::-webkit-outer-spin-button,
+    .control-box input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .control-box input[type="range"] {
+      width: 100%;
+    }
+
+    /* Buttons - large for touch */
+    button, label.btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active, label.btn:active {
+      transform: scale(0.96);
+    }
+
+    button:disabled {
+      background: #333 !important;
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #333;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Camera viewer */
+    .viewer {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    #camera {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #111;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 85%;
+      max-height: 70%;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0.7;
+      touch-action: none;
+    }
+
+    #overlay.draggable {
+      pointer-events: auto;
+      cursor: move;
+    }
+
+    /* Bottom control panel */
+    .panel {
+      background: rgba(20, 20, 20, 0.98);
+      border-top: 1px solid #333;
+      padding: 14px 16px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 20;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slider-header label {
+      font-size: 0.95rem;
+      color: #ddd;
+      font-weight: 500;
+    }
+
+    .slider-header .value {
+      font-size: 0.95rem;
+      color: #60a5fa;
+      font-weight: 600;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 32px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      margin: 0;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #fff;
+      margin-top: -10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #aaa;
+      text-align: center;
+      min-height: 1.3em;
+      line-height: 1.4;
+    }
+
+    .status.error {
+      color: #f87171;
+    }
+
+    .status.success {
+      color: #4ade80;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Floating action buttons when camera is on (optional compact mode) */
+    .fab-row {
+      display: none;
+    }
+
+    /* Make sure video doesn't cause scroll */
+    video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>🎭 LAZY ART</h1>
+    <div class="top-actions">
+      <button id="startBtn">Start Camera</button>
+      <button id="stopBtn" class="secondary" disabled>Stop</button>
+      <button id="torchBtn" class="secondary" disabled>🔦 Torch</button>
+      <label class="btn" for="fileInput">Upload</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <button id="clearBtn" class="secondary" disabled>Clear</button>
+    </div>
+  </div>
+
+  <div class="viewer">
+    <video id="camera" autoplay playsinline muted></video>
+    <img id="overlay" alt="Overlay" style="display: none;">
+  </div>
+
+  <div class="panel">
+    <div class="controls-grid">
+      <!-- Opacity Box -->
+      <div class="control-box">
+        <div class="label-row">
+          <label for="opacity">Transparency</label>
+          <input type="number" id="opacityInput" min="0" max="100" value="70">
+        </div>
+        <input type="range" id="opacity" min="0" max="100" value="70">
+      </div>
+
+      <!-- Size Box -->
+      <div class="control-box">
+        <div class="label-row">
+          <label for="scale">Size</label>
+          <input type="number" id="scaleInput" min="10" max="250" value="100">
+        </div>
+        <input type="range" id="scale" min="10" max="250" value="100">
+      </div>
+    </div>
+
+    <p class="status" id="status">Tap “Start Camera” to begin</p>
+    <p class="hint">Drag the image to move it • Use sliders or type values</p>
+  </div>
+
+  <script>
+    const video = document.getElementById('camera');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const torchBtn = document.getElementById('torchBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const fileInput = document.getElementById('fileInput');
+    const opacitySlider = document.getElementById('opacity');
+    const opacityInput = document.getElementById('opacityInput');
+    const scaleSlider = document.getElementById('scale');
+    const scaleInput = document.getElementById('scaleInput');
+    const status = document.getElementById('status');
+
+    let stream = null;
+    let track = null;
+    let torchOn = false;
+    let isDragging = false;
+    let startX, startY, offsetX = 0, offsetY = 0;
+    let currentScale = 1;
+
+    function setStatus(msg, type = '') {
+      status.textContent = msg;
+      status.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function checkSecureContext() {
+      if (!window.isSecureContext) {
+        setStatus('⚠️ Needs HTTPS. Upload this file to Netlify Drop or Tiiny.host', 'error');
+        startBtn.disabled = true;
+        return false;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('Camera not supported in this browser', 'error');
+        startBtn.disabled = true;
+        return false;
+      }
+      return true;
+    }
+
+    checkSecureContext();
+
+    // Start camera
+    startBtn.addEventListener('click', async () => {
+      if (!checkSecureContext()) return;
+
+      setStatus('Requesting camera...');
+      startBtn.disabled = true;
+
+      const attempts = [
+        { video: { facingMode: { ideal: 'environment' } }, audio: false },
+        { video: { facingMode: 'environment' }, audio: false },
+        { video: true, audio: false },
+        { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }
+      ];
+
+      let lastError = null;
+
+      for (const constraints of attempts) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+          track = stream.getVideoTracks()[0];
+
+          await new Promise((resolve) => {
+            if (video.readyState >= 1) {
+              video.play().then(resolve).catch(resolve);
+            } else {
+              video.onloadedmetadata = () => {
+                video.play().then(resolve).catch(resolve);
+              };
+            }
+          });
+
+          stopBtn.disabled = false;
+
+          // Check if torch is supported
+          const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+          if (capabilities.torch) {
+            torchBtn.disabled = false;
+            setStatus('Camera active ✓ • Torch available', 'success');
+          } else {
+            torchBtn.disabled = true;
+            setStatus('Camera active ✓', 'success');
+          }
+          return;
+        } catch (err) {
+          lastError = err;
+          console.warn('Camera try failed:', err.name);
+        }
+      }
+
+      // Failed
+      startBtn.disabled = false;
+      let msg = 'Could not open camera. ';
+
+      if (lastError) {
+        const name = lastError.name || '';
+        if (name.includes('NotAllowed') || name.includes('Permission')) {
+          msg = 'Permission denied. Allow camera access in browser settings.';
+        } else if (name.includes('NotFound') || name.includes('DevicesNotFound')) {
+          msg = 'No camera found on this device.';
+        } else if (name.includes('NotReadable') || name.includes('TrackStart')) {
+          msg = 'Camera is being used by another app. Close it and try again.';
+        } else {
+          msg += (lastError.message || name);
+        }
+      }
+
+      setStatus(msg, 'error');
+    });
+
+    // Stop camera
+    stopBtn.addEventListener('click', async () => {
+      // Turn off torch first
+      if (torchOn && track) {
+        try {
+          await track.applyConstraints({ advanced: [{ torch: false }] });
+        } catch (e) {}
+        torchOn = false;
+        torchBtn.classList.remove('torch-on');
+        torchBtn.textContent = '🔦 Torch';
+      }
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+        track = null;
+        video.srcObject = null;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      torchBtn.disabled = true;
+      setStatus('Camera stopped');
+    });
+
+    // Torch / Flashlight toggle
+    torchBtn.addEventListener('click', async () => {
+      if (!track) return;
+
+      try {
+        torchOn = !torchOn;
+        await track.applyConstraints({
+          advanced: [{ torch: torchOn }]
+        });
+
+        if (torchOn) {
+          torchBtn.classList.add('torch-on');
+          torchBtn.textContent = '🔦 ON';
+          setStatus('Torch turned ON', 'success');
+        } else {
+          torchBtn.classList.remove('torch-on');
+          torchBtn.textContent = '🔦 Torch';
+          setStatus('Torch turned OFF');
+        }
+      } catch (err) {
+        console.error('Torch error:', err);
+        torchOn = false;
+        torchBtn.classList.remove('torch-on');
+        torchBtn.textContent = '🔦 Torch';
+        setStatus('Torch not supported on this device', 'error');
+      }
+    });
+
+    // Upload image
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        overlay.src = ev.target.result;
+        overlay.style.display = 'block';
+        overlay.classList.add('draggable');
+        clearBtn.disabled = false;
+        offsetX = 0;
+        offsetY = 0;
+        currentScale = scaleSlider.value / 100;
+        overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+        setStatus('Image loaded – adjust below', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', () => {
+      overlay.src = '';
+      overlay.style.display = 'none';
+      overlay.classList.remove('draggable');
+      clearBtn.disabled = true;
+      fileInput.value = '';
+      setStatus('Overlay cleared');
+    });
+
+    // Opacity - slider
+    opacitySlider.addEventListener('input', () => {
+      const val = opacitySlider.value;
+      overlay.style.opacity = val / 100;
+      opacityInput.value = val;
+    });
+
+    // Opacity - number input
+    opacityInput.addEventListener('input', () => {
+      let val = parseInt(opacityInput.value) || 0;
+      val = Math.max(0, Math.min(100, val));
+      opacityInput.value = val;
+      opacitySlider.value = val;
+      overlay.style.opacity = val / 100;
+    });
+
+    // Scale - slider
+    scaleSlider.addEventListener('input', () => {
+      currentScale = scaleSlider.value / 100;
+      scaleInput.value = scaleSlider.value;
+      overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+    });
+
+    // Scale - number input
+    scaleInput.addEventListener('input', () => {
+      let val = parseInt(scaleInput.value) || 100;
+      val = Math.max(10, Math.min(250, val));
+      scaleInput.value = val;
+      scaleSlider.value = val;
+      currentScale = val / 100;
+      overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+    });
+
+    // Drag (touch + mouse)
+    function getPoint(e) {
+      if (e.touches && e.touches.length) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function startDrag(e) {
+      if (!overlay.classList.contains('draggable')) return;
+      isDragging = true;
+      const p = getPoint(e);
+      startX = p.x - offsetX;
+      startY = p.y - offsetY;
+      e.preventDefault();
+    }
+
+    function onDrag(e) {
+      if (!isDragging) return;
+      const p = getPoint(e);
+      offsetX = p.x - startX;
+      offsetY = p.y - startY;
+      overlay.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${currentScale})`;
+      e.preventDefault();
+    }
+
+    function endDrag() {
+      isDragging = false;
+    }
+
+    overlay.addEventListener('mousedown', startDrag);
+    overlay.addEventListener('touchstart', startDrag, { passive: false });
+    window.addEventListener('mousemove', onDrag);
+    window.addEventListener('touchmove', onDrag, { passive: false });
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('touchend', endDrag);
+
+    // Initial
+    overlay.style.opacity = 0.7;
+  </script>
+</body>
+</html>
